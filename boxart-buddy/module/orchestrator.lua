@@ -36,6 +36,9 @@ function M:request(type, parameters)
     elseif type == "pack" then
         self.DIC.thread:push("orchestrator", { type = "pack", threadKey = "pack", parameters = parameters })
         self.DIC.systemeventsubscriber:publish("orchestrate_requested", { type = "pack" })
+    elseif type == "update_direct" then
+        self.DIC.thread:push("orchestrator", { type = "update_direct", threadKey = "update_direct", parameters = parameters })
+        self.DIC.systemeventsubscriber:publish("orchestrate_requested", { type = "update_direct", text = "Updating Images Directly" })
     end
 end
 
@@ -109,6 +112,14 @@ function M:orchestrate(type, parameters)
             self.DIC.mixStrategyProvider
         )
         return mixer:orchestrate({ platforms = parameters.platforms })
+    elseif type == "update_direct" then
+        local directUpdater = require("module.direct_updater")(
+            self.DIC.environment,
+            self.DIC.logger,
+            self.DIC.database,
+            self.DIC.platform
+        )
+        return directUpdater:orchestrate({ platforms = parameters.platforms })
     else
         error(string.format("Cannot orchestrate for unknown type %s", type))
     end

@@ -115,7 +115,7 @@ function M:new(environment, systemeventsubscriber, inputeventsubscriber, input, 
         self.currentlyRunning = e.threadKey
     end)
 
-    local canCancelWhitelist = { "scrape_roms", "mix", "pack", "scan_roms" }
+    local canCancelWhitelist = { "scrape_roms", "mix", "pack", "update_direct", "scan_roms" }
     self.inputeventsubscriber:subscribe("input", function(e)
         if
             e.scope == "blocking_modal"

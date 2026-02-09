@@ -423,6 +423,15 @@ return {
         group = "pack",
         description = "Used as the filename of the archive if `custom` name strategy selected",
     },
+    -- direct_update
+    {
+        key = "direct_update_overwrite",
+        type = "boolean",
+        default = false,
+        label = "Overwrite",
+        group = "direct_update",
+        description = "When updating images directly, 'true' will overwrite existing images. 'false' will only copy images that don't already exist in the catalog",
+    },
     -- ui
     {
         key = "ui_mute_sound",

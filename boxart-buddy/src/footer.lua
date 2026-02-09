@@ -192,7 +192,7 @@ function M:new(systemeventsubscriber)
     end)
 
     -- CANCEL MODAL
-    local canCancelWhitelist = { "scrape_roms", "mix", "pack", "scan_roms" }
+    local canCancelWhitelist = { "scrape_roms", "mix", "pack", "update_direct", "scan_roms" }
     self.systemeventsubscriber:subscribe("progress_created", function(e)
         if
             e.tags

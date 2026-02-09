@@ -74,7 +74,7 @@ function M:initButtonList()
                 subTextFont = ASSETS.font.inter.bold(FONTSIZE.m),
                 x = (SCREEN.w - SCREEN.wUnit(22)) / 2,
                 buttonWidth = SCREEN.wUnit(22),
-                buttonHeight = SCREEN.hUnit(7),
+                buttonHeight = SCREEN.hUnit(6),
                 textOffsetX = SCREEN.wUnit(6),
                 iconOffsetX = SCREEN.wUnit(1.5),
                 disabled = not hasRoms or self:_allPlatformsFiltered(),
@@ -111,7 +111,7 @@ function M:initButtonList()
                 subTextFont = ASSETS.font.inter.bold(FONTSIZE.m),
                 x = (SCREEN.w - SCREEN.wUnit(22)) / 2,
                 buttonWidth = SCREEN.wUnit(22),
-                buttonHeight = SCREEN.hUnit(7),
+                buttonHeight = SCREEN.hUnit(6),
                 textOffsetX = SCREEN.wUnit(6),
                 iconOffsetX = SCREEN.wUnit(1.5),
                 disabled = not hasMedia or not hasRoms or self:_allPlatformsFiltered() or not self.selectedPreset,
@@ -147,7 +147,7 @@ function M:initButtonList()
                 subTextFont = ASSETS.font.inter.bold(FONTSIZE.m),
                 x = (SCREEN.w - SCREEN.wUnit(22)) / 2,
                 buttonWidth = SCREEN.wUnit(22),
-                buttonHeight = SCREEN.hUnit(7),
+                buttonHeight = SCREEN.hUnit(6),
                 textOffsetX = SCREEN.wUnit(6),
                 iconOffsetX = SCREEN.wUnit(1.5),
                 disabled = not (hasRoms and hasMedia),
@@ -167,12 +167,42 @@ function M:initButtonList()
                 end,
             },
         },
+        {
+            key = "update_direct",
+            type = "button",
+            label = "Update Images Directly",
+            description = "Copies mix images directly to the catalogue folder (info/catalogue/<system>)",
+            options = {
+                subText = self.environment:getConfig("direct_update_overwrite") and "Overwrite enabled" or "Skip existing",
+                subTextFont = ASSETS.font.inter.bold(FONTSIZE.m),
+                x = (SCREEN.w - SCREEN.wUnit(22)) / 2,
+                buttonWidth = SCREEN.wUnit(22),
+                buttonHeight = SCREEN.hUnit(6),
+                textOffsetX = SCREEN.wUnit(6),
+                iconOffsetX = SCREEN.wUnit(1.5),
+                disabled = not (hasRoms and hasMedia),
+                textTransform = "upper",
+                textAlign = "left",
+                iconScale = 0.35,
+                icon = "download",
+                onConfirm = function()
+                    local params = {}
+                    if self:_isFilterApplied() then
+                        params.platforms = self:_getFilterPlatforms()
+                    end
+                    if not mute then
+                        love.audio.play(self.startFx)
+                    end
+                    self.orchestrator:request("update_direct", params)
+                end,
+            },
+        },
     }
     self.buttonList = Menu(self.canvas, self.systemeventsubscriber, buttonDefinitions, {}, {
         width = SCREEN.w,
         height = SCREEN.mainH,
-        y = SCREEN.hUnit(10),
-        widgetHeight = SCREEN.hUnit(9),
+        y = SCREEN.hUnit(7),
+        widgetHeight = SCREEN.hUnit(8),
         font = ASSETS.font.inter.bold(FONTSIZE.xxl),
         labelWidth = 0,
     })
