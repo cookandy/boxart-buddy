@@ -218,7 +218,7 @@ function M:scrapeOne(romUuid, options)
 
     -- when this option is true then existing media will be rescraped
     local overwrite = options and options.overwrite or false
-    local requestedTypes = options.mediaTypes and options.mediaTypes or self.mediaTypeProvider:getMediaTypes()
+    local requestedTypes = options.mediaTypes and options.mediaTypes or self.mediaTypeProvider:getScrapeMediaTypes()
 
     -- using this option uses any 'alternate' platforms the rom might have
     -- and then if the romname is a '.zip' does a match on the dat file agains the filename to extract a "name" for the datfile
@@ -247,6 +247,15 @@ function M:scrapeOne(romUuid, options)
         return { status = self.thread.TASK_STATUS.fail }
     end
 
+    -- Check if we need to scrape synopsis
+    local needsSynopsis = false
+    if self.environment:getConfig("media_text_enabled") then
+        local fullRom = self.romRepository:getRom(rom.uuid)
+        if fullRom and (overwrite or not fullRom.synopsis or fullRom.synopsis == "") then
+            needsSynopsis = true
+        end
+    end
+
     -- 'overwrite' variable = true prevents scraping for types we already have
     local scrapeTypes = {}
     for _, typ in ipairs(requestedTypes) do
@@ -259,7 +268,7 @@ function M:scrapeOne(romUuid, options)
     end
 
     -- options.batch only used to supress this warning in batch mode
-    if #scrapeTypes == 0 and not options.batch then
+    if #scrapeTypes == 0 and not needsSynopsis and not options.batch then
         return {
             status = self.thread.TASK_STATUS.ok,
             logs = {
@@ -275,7 +284,10 @@ function M:scrapeOne(romUuid, options)
     local result = {}
     local downloadedCount = 0
     local scrapeRemaining = table.shallow_copy(scrapeTypes)
-    if next(scrapeTypes) then
+    local scrapedSynopsis = nil
+
+    -- Scrape for images and/or synopsis
+    if next(scrapeTypes) or needsSynopsis then
         for i, scraperTuple in ipairs(scrapers) do
             -- we scrapin
             local scraper = scraperTuple.module
@@ -283,12 +295,14 @@ function M:scrapeOne(romUuid, options)
 
             local supported = self:getScraperSupportedTypes(scraperTuple.id)
 
-            if
-                next(scrapeRemaining)
+            -- Check if this scraper can help with images or synopsis
+            local canScrapeImages = next(scrapeRemaining)
                 and table.any(scrapeRemaining, function(t)
                     return table.contains(supported, t)
                 end)
-            then
+            local canScrapeSynopsis = needsSynopsis and not scrapedSynopsis and scraperTuple.id == "screenscraper"
+
+            if canScrapeImages or canScrapeSynopsis then
                 -- only scrape for types supported by the scraper
                 local scrapeSupported = {}
                 for _, typ in ipairs(scrapeRemaining) do
@@ -296,7 +310,13 @@ function M:scrapeOne(romUuid, options)
                         table.insert(scrapeSupported, typ)
                     end
                 end
-                local matches = scraper:scrape(rom, scrapeSupported)
+                local matches, synopsis = scraper:scrape(rom, scrapeSupported)
+
+                -- Save synopsis if enabled and returned
+                if synopsis and self.environment:getConfig("media_text_enabled") and not scrapedSynopsis then
+                    scrapedSynopsis = synopsis
+                    self.logger:log("info", "scraper", string.format("Received synopsis for rom: %s (length: %d)", rom.romname, #synopsis))
+                end
 
                 if not next(matches) then
                     self.logger:log(
@@ -352,6 +372,12 @@ function M:scrapeOne(romUuid, options)
                 end
             end
         end
+    end
+
+    -- Save synopsis if we scraped one and need it
+    if scrapedSynopsis and needsSynopsis then
+        self.romRepository:saveSynopsis(rom.uuid, scrapedSynopsis)
+        self.logger:log("info", "scraper", string.format("Saved synopsis for rom: %s", rom.romname))
     end
 
     if result.status == nil then

@@ -346,6 +346,14 @@ return {
         group = "media",
         description = "Should scrape for 2x3 Grid?",
     },
+    {
+        key = "media_text_enabled",
+        type = "boolean",
+        default = true,
+        label = "Enable Text/Description",
+        group = "media",
+        description = "Should scrape for game descriptions/synopsis? These will be saved as text files when packing or updating",
+    },
     -- mix
     {
         key = "mix_overwrite",

@@ -73,6 +73,11 @@ function M:saveRomOptions(romUuid, romOptionsJson)
     return self.database:blockingExec(updateSql, { romUuid = romUuid, romOptionsJson = romOptionsJson })
 end
 
+function M:saveSynopsis(romUuid, synopsis)
+    local updateSql = "UPDATE rom SET synopsis = :synopsis WHERE rom.uuid = :romUuid"
+    return self.database:blockingExec(updateSql, { romUuid = romUuid, synopsis = synopsis })
+end
+
 ---@return number
 function M:getErrorCount()
     local countQuery = "SELECT COUNT(*) as count FROM rom WHERE rom.stale = 0 AND rom.hidden=0 AND rom.error=1 "

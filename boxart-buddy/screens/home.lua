@@ -170,8 +170,8 @@ function M:initButtonList()
         {
             key = "update_direct",
             type = "button",
-            label = "Update Images Directly",
-            description = "Copies mix images directly to the catalogue folder (info/catalogue/<system>)",
+            label = "Update Metadata Directly",
+            description = "Copies mix images and descriptions directly to the catalogue folder (info/catalogue/<system>)",
             options = {
                 subText = self.environment:getConfig("direct_update_overwrite") and "Overwrite enabled" or "Skip existing",
                 subTextFont = ASSETS.font.inter.bold(FONTSIZE.m),

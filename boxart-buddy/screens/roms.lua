@@ -312,6 +312,19 @@ function M:loadMediaData()
     end
     local uuid = self.romData[self.activeTableRow].uuid
     self.mediaData = self.romRepository:getMediaForRom(uuid)
+
+    -- Add synopsis as "text" if it exists and text is enabled
+    -- If synopsis doesn't exist, don't add to mediaData - UI will show X automatically
+    if self.environment:getConfig("media_text_enabled") then
+        local rom = self.romRepository:getRom(uuid)
+        if rom and rom.synopsis and rom.synopsis ~= "" then
+            self.mediaData["text"] = { type = "text", exists = true }
+            print("[ROMS] Synopsis exists for ROM, length:", #rom.synopsis)
+        else
+            print("[ROMS] No synopsis for ROM")
+        end
+    end
+
     -- this event is used on the mix page. bit of a dirty hack to work around the iffy event binding on this page
     self.systemeventsubscriber:publish("rom_media_loaded", { romUuid = uuid })
 end
@@ -648,6 +661,23 @@ function M:enter()
     -- media types might have changed due to config changes
     self.mediaTypes = self.mediaTypeProvider:getMediaTypes()
     self.scrapeMediaTypes = self.mediaTypeProvider:getScrapeMediaTypes()
+
+    -- Always ensure "text" is in the media types list for display purposes, before "mix"
+    if not table.contains(self.mediaTypes, "text") then
+        -- Find position of "mix" and insert "text" before it
+        local mixIndex = nil
+        for i, typ in ipairs(self.mediaTypes) do
+            if typ == "mix" then
+                mixIndex = i
+                break
+            end
+        end
+        if mixIndex then
+            table.insert(self.mediaTypes, mixIndex, "text")
+        else
+            table.insert(self.mediaTypes, "text")
+        end
+    end
 
     self.systemeventsubscriber:publish("screen_enter", { screen = "ROMS" })
 end

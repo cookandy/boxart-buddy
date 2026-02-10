@@ -101,7 +101,7 @@ function M:_scrapeApiAndFormatResult(rom, types, returnFormat)
             types = searchTypes,
         })
 
-        return filteredResult.media
+        return filteredResult.media, filteredResult.synopsis
     elseif returnFormat == "preferred" then
         local flatTypes = {}
         for typ, ssTyps in pairs(searchTypes) do

@@ -2,9 +2,9 @@
 
 ![Boxart Buddy](/doc/image/logo.png?raw=true "Boxart Buddy")
 
-**Boxart Buddy** is a ROM artwork scraper and composite image (mix) editor for MuOS, that splits the artwork creation process into four stages. 
+**Boxart Buddy** is a ROM artwork scraper and composite image (mix) editor for MuOS, that splits the artwork creation process into four stages.
 
-SCAN > SCRAPE > MIX > PACK
+SCAN > SCRAPE > MIX > PACK / UPDATE
 
 (It's sort of like [Skraper](https://www.skraper.net) but it runs directly on your handheld)
 
@@ -14,11 +14,13 @@ SCAN > SCRAPE > MIX > PACK
 
 - **Scan** and verify your roms against a database of known roms using bundled .dat data. (Improves matches when scraping roms)
 
-- **Scrape** artwork from Libretro, Screenscraper.fr and SteamGridDB.com, with support for multi-threading for improved performance.
+- **Scrape** artwork and descriptions from Libretro, Screenscraper.fr and SteamGridDB.com, with support for multi-threading for improved performance.
 
 - **Mix** media together using preset styles or configure your own with the interactive editor.
 
-- **Pack** media into Catalog Packages or install directly into MuOS
+- **Pack** media into Catalog Packages or **Update Metadata Directly** to install images and text descriptions directly into the MuOS catalog
+
+- **Text/Description Support** - Scrape game descriptions and export them as text files for use in MuOS themes that support descriptions
 
 - All configuration is done via the app GUI. Very easy to use!
 
@@ -44,6 +46,76 @@ SCAN > SCRAPE > MIX > PACK
 
 - Download the [latest release](https://github.com/boxart-buddy/boxart-buddy/releases) and place into the 'Archive' folder on your SD1 card (/ARCHIVE). Use the 'Archive Manager' app to unzip the application.
 
+# Database Migration (For Existing Users)
+
+If you're upgrading from a previous version and want to keep your existing data while gaining access to new features (like text/description scraping), you'll need to migrate your database schema. Here's how:
+
+**Option 1: Migrate Existing Database (Keep Your Data)**
+
+1. Copy `MUOS/application/BoxartBuddy/data/db/bb.db` to your computer
+2. Make a backup copy of `bb.db` (just in case!)
+3. Remove the `-wal` and `-shm` files from ``MUOS/application/BoxartBuddy/data/db/`
+4. Open `bb.db` with a SQLite tool (like [DB Browser for SQLite](https://sqlitebrowser.org/) or via command line)
+5. Run this SQL command:
+   ```sql
+   ALTER TABLE rom ADD COLUMN synopsis TEXT;
+   ```
+6. Save and close the database
+7. Copy `bb.db` back to the device
+
+Your existing ROMs, media, and mixes will be preserved, and you'll now be able to scrape descriptions for games.
+
+**Option 2: Fresh Start (Easiest)**
+
+If you don't mind starting over:
+
+1. In the app, go to CONFIG > SYS and use "Full Reset (Deletes all data)"
+2. This will create a new database with the updated schema
+3. You'll need to re-scan and re-scrape your ROMs
+
+**After Migration:**
+
+- Go to CONFIG > MEDIA and enable "Enable Text/Description" if desired (enabled by default)
+- Run a scrape to fetch game descriptions from Screenscraper
+- Descriptions will be saved as text files when you pack images or use "Update Metadata Directly"
+
+**Important:** Make sure to close the app completely before performing the migration. If you see `.db-shm` or `.db-wal` files in the database directory, delete them or run `PRAGMA wal_checkpoint(TRUNCATE);` before adding the column.
+
+# Features
+
+## Text/Description Support
+
+Boxart Buddy can now scrape game descriptions/synopses from Screenscraper and export them as text files. This is useful for MuOS themes that support displaying game descriptions.
+
+**Setup:**
+1. Enable "Enable Text/Description" in CONFIG > MEDIA (enabled by default)
+2. Run a scrape - descriptions will be fetched alongside images
+3. Export using either:
+   - **Pack Images** - Creates catalog packages with text files
+   - **Update Metadata Directly** - Copies text files directly to `info/catalogue/<system>/text/`
+
+**Features:**
+- Descriptions are stored in the database and can be scraped independently of images
+- When "Overwrite existing media" is disabled, the scraper will only fetch missing data (e.g., can scrape descriptions without re-downloading existing images)
+- Text files are named to match your ROM files (e.g., `game.nes` → `game.txt`)
+- The ROMS view shows a "text" indicator with a checkmark when a description exists
+
+## Update Metadata Directly
+
+A new option on the HOME screen allows you to update the MuOS catalog directly without creating archive files.
+
+**How it works:**
+- Copies mix images to `info/catalogue/<system>/box/`
+- Copies preview images to `info/catalogue/<system>/preview/`
+- Writes text descriptions to `info/catalogue/<system>/text/`
+- Respects the "Overwrite" setting in CONFIG > DIRECT UPDATE
+- Processes each media type independently (can update text even if images already exist)
+
+**When to use:**
+- Quick updates without creating .muxcat files
+- Updating only descriptions for games that already have images
+- Iterative workflow where you're making frequent changes
+
 # Quickstart / First Run
 
 - On first run the app will initialize by creating a backup of the primary database. This takes around 45 seconds. Be patient (screen will hang for ~20 seconds at the end of this process)
@@ -62,7 +134,11 @@ SCAN > SCRAPE > MIX > PACK
 
 # Additional Tips
 
-- Note that the "Filter" (in ROMS and HOME) is applied to all actions on the HOME screen (i.e SCRAPE, MIX, PACK). That means you can take actions against a subset of platforms at a time. Be aware of this though (i.e if you run a PACK process while a filter is applied then you will only be exporting a subset of rom images).
+- **Four export options:** The HOME screen now has four buttons: SCRAPE, GENERATE MIXES, PACK IMAGES, and UPDATE METADATA DIRECTLY. The last option copies files directly to the catalog without creating archives.
+
+- **Selective scraping:** When "Overwrite existing media" is disabled in CONFIG > SCRAPE, the scraper will intelligently fetch only what's missing. For example, if you already have images but no descriptions, it will only scrape the descriptions.
+
+- Note that the "Filter" (in ROMS and HOME) is applied to all actions on the HOME screen (i.e SCRAPE, MIX, PACK, UPDATE). That means you can take actions against a subset of platforms at a time. Be aware of this though (i.e if you run a PACK process while a filter is applied then you will only be exporting a subset of rom images).
 
 - Bail out of a long running process by pressing SELECT
 
@@ -116,7 +192,7 @@ At present the application doesn't handle failure very well as failure routes ar
 Under the hood uses [Skyscraper](https://github.com/Gemba/skyscraper) so has all the strengths of that application (mature, robust, many scraping backends, can provide your own mixes via XML templates)
 
 ### [Artie](https://github.com/milouk/artie)
-A minimal scraper written in Python 
+A minimal scraper written in Python
 
 
 # Issues & Logging/Debugging
@@ -133,12 +209,12 @@ If the app crashes with an error then this will be logged to ~/MUOS/application/
 
 This project uses code from the following projects:
 
-- **RetroArch / Libretro**  
+- **RetroArch / Libretro**
   Portions of code in `discscanner.so` are derived from RetroArch (`task_database_cue.c`). [https://github.com/libretro/RetroArch](https://github.com/libretro/RetroArch)
 - **lua-vips** (MIT) – Lua bindings for libvips. [https://github.com/libvips/lua-vips](https://github.com/libvips/lua-vips)
 - **libvips** (LGPL-2.1+) – Image processing library. [https://github.com/libvips/libvips](https://github.com/libvips/libvips)
 - **lua-sqlite3** (MIT) – SQLite binding for Lua. [https://lua.sqlite.org/home/index](https://lua.sqlite.org/home/index)
-- **lua-archive** (MIT) – libarchive binding for Lua. [https://github.com/brimworks/lua-archive](https://github.com/brimworks/lua-archive) 
+- **lua-archive** (MIT) – libarchive binding for Lua. [https://github.com/brimworks/lua-archive](https://github.com/brimworks/lua-archive)
 - **lua-ezlib** (MIT) – Easy zlib bindings for Lua: [https://github.com/neoxic/lua-ezlib](https://github.com/neoxic/lua-ezlib)
 - **LÖVE** (MIT) – The Application framework LOVE. [https://github.com/love2d/love](https://github.com/love2d/love)
 - **Batteries** - Helpful library for writing LOVE games & applications [https://github.com/1bardesign/batteries](https://github.com/1bardesign/batteries)
@@ -164,7 +240,7 @@ This application is designed for MuOS. You must download and install the latest 
 This application uses various parts of the libretro project. The consolidated dat files from [https://github.com/libretro/libretro-database](https://github.com/libretro/libretro-database) are used as source files for the DAT database. In addition the code that scans 'disc' based roms (e.g PSX/DC) to extract serial numbers is derived from libretro. Finally the image assets from [https://github.com/libretro-thumbnails/libretro-thumbnails](https://github.com/libretro-thumbnails/libretro-thumbnails) and hosted at [https://thumbnails.libretro.com](https://thumbnails.libretro.com) are used as a source for scraping images.
 
 ### [Screenscraper.fr](https://www.screenscraper.fr)
-A comprehensive API used as a source for scraping media in this application. For best results you should sign up for an account (in order to use the API during times of high demand you will require an account). For additional resource limits and threads (which will speed up your scraping process), you can donate to the project here[https://en.tipeee.com/screenscraper](https://en.tipeee.com/screenscraper). 
+A comprehensive API used as a source for scraping media in this application. For best results you should sign up for an account (in order to use the API during times of high demand you will require an account). For additional resource limits and threads (which will speed up your scraping process), you can donate to the project here[https://en.tipeee.com/screenscraper](https://en.tipeee.com/screenscraper).
 
 ### [SteamGridDB](https://www.steamgriddb.com)
 A media API used to fetch 'grid' assets. You need to sign up for an account here an generate an API key in order to use this as a source.
@@ -174,5 +250,5 @@ Dat data for verifying roms.
 
 ## License
 
-This project is released under the **GNU General Public License version 3 (GPLv3) or later**.  
+This project is released under the **GNU General Public License version 3 (GPLv3) or later**.
 See [LICENSE](LICENSE) for details.

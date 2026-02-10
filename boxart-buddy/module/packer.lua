@@ -113,6 +113,16 @@ function M:packOne(romUuid, options)
             end
         end
     end
+
+    -- Write text/description if enabled and exists
+    if self.environment:getConfig("media_text_enabled") and rom.synopsis and rom.synopsis ~= "" then
+        local p = self.platform:getPlatformByKey(rom.platform)
+        local toDir = path.join(targetFolder, p.muos, "text")
+        local to = path.join(toDir, path.swapExtension(rom.filename, "txt"))
+        local cmd = string.format("mkdir -p %s", stringUtil.shellQuote(toDir))
+        os.execute(cmd)
+        filesystem.write(to, rom.synopsis)
+    end
 end
 
 function M:archiveTempToPackageFolder()

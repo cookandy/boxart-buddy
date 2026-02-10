@@ -70,27 +70,26 @@ function M:updateOne(romUuid, options)
         -- Check if we should skip based on overwrite setting
         local overwrite = self.environment:getConfig("direct_update_overwrite")
         if not overwrite and filesystem.getInfo(to, "file") then
-            self.logger:log("debug", "direct_updater", string.format("Skipping %s (already exists)", rom.filename))
-            return
-        end
-
-        -- Create target directory if it doesn't exist
-        if not filesystem.getInfo(toDir, "directory") then
-            filesystem.createDirectory(toDir)
-        end
-
-        -- Copy the file
-        local cmd = string.format(
-            "cp %s %s",
-            stringUtil.shellQuote(from),
-            stringUtil.shellQuote(to)
-        )
-        local success = os.execute(cmd)
-
-        if success then
-            self.logger:log("info", "direct_updater", string.format("Updated %s", rom.filename))
+            self.logger:log("debug", "direct_updater", string.format("Skipping mix for %s (already exists)", rom.filename))
         else
-            self.logger:log("error", "direct_updater", string.format("Failed to update %s", rom.filename))
+            -- Create target directory if it doesn't exist
+            if not filesystem.getInfo(toDir, "directory") then
+                filesystem.createDirectory(toDir)
+            end
+
+            -- Copy the file
+            local cmd = string.format(
+                "cp %s %s",
+                stringUtil.shellQuote(from),
+                stringUtil.shellQuote(to)
+            )
+            local success = os.execute(cmd)
+
+            if success then
+                self.logger:log("info", "direct_updater", string.format("Updated %s", rom.filename))
+            else
+                self.logger:log("error", "direct_updater", string.format("Failed to update %s", rom.filename))
+            end
         end
     else
         self.logger:log("debug", "direct_updater", string.format("No mix image for %s", rom.filename))
@@ -108,28 +107,60 @@ function M:updateOne(romUuid, options)
         local overwrite = self.environment:getConfig("direct_update_overwrite")
         if not overwrite and filesystem.getInfo(to, "file") then
             self.logger:log("debug", "direct_updater", string.format("Skipping preview for %s (already exists)", rom.filename))
-            return
-        end
-
-        -- Create target directory if it doesn't exist
-        if not filesystem.getInfo(toDir, "directory") then
-            filesystem.createDirectory(toDir)
-        end
-
-        -- Copy the file
-        local cmd = string.format(
-            "cp %s %s",
-            stringUtil.shellQuote(from),
-            stringUtil.shellQuote(to)
-        )
-        local success = os.execute(cmd)
-
-        if success then
-            -- Resize preview to 515px (max allowed by muos)
-            local r, err = image.rescale(to, 515)
-            self.logger:log("info", "direct_updater", string.format("Updated preview for %s", rom.filename))
         else
-            self.logger:log("error", "direct_updater", string.format("Failed to update preview for %s", rom.filename))
+            -- Create target directory if it doesn't exist
+            if not filesystem.getInfo(toDir, "directory") then
+                filesystem.createDirectory(toDir)
+            end
+
+            -- Copy the file
+            local cmd = string.format(
+                "cp %s %s",
+                stringUtil.shellQuote(from),
+                stringUtil.shellQuote(to)
+            )
+            local success = os.execute(cmd)
+
+            if success then
+                -- Resize preview to 515px (max allowed by muos)
+                local r, err = image.rescale(to, 515)
+                self.logger:log("info", "direct_updater", string.format("Updated preview for %s", rom.filename))
+            else
+                self.logger:log("error", "direct_updater", string.format("Failed to update preview for %s", rom.filename))
+            end
+        end
+    end
+
+    -- Write text/description if enabled and exists
+    if self.environment:getConfig("media_text_enabled") and rom.synopsis and rom.synopsis ~= "" then
+        local toDir = path.join(catalogBasePath, p.muos, "text")
+        local to = path.join(toDir, path.swapExtension(rom.filename, "txt"))
+
+        self.logger:log("debug", "direct_updater", string.format("Attempting to write text for %s (synopsis length: %d)", rom.filename, #rom.synopsis))
+
+        -- Check if we should skip based on overwrite setting
+        local overwrite = self.environment:getConfig("direct_update_overwrite")
+        if not overwrite and filesystem.getInfo(to, "file") then
+            self.logger:log("debug", "direct_updater", string.format("Skipping text for %s (already exists)", rom.filename))
+        else
+            -- Create target directory if it doesn't exist
+            if not filesystem.getInfo(toDir, "directory") then
+                filesystem.createDirectory(toDir)
+                self.logger:log("debug", "direct_updater", string.format("Created directory: %s", toDir))
+            end
+
+            -- Write the text file
+            local success = filesystem.write(to, rom.synopsis)
+
+            if success then
+                self.logger:log("info", "direct_updater", string.format("Updated text for %s", rom.filename))
+            else
+                self.logger:log("error", "direct_updater", string.format("Failed to update text for %s", rom.filename))
+            end
+        end
+    else
+        if self.environment:getConfig("media_text_enabled") then
+            self.logger:log("debug", "direct_updater", string.format("No synopsis for %s", rom.filename))
         end
     end
 end

@@ -32,6 +32,9 @@ function M:getMediaTypes()
     if self.environment:getConfig("media_grid2x3_enabled") then
         table.insert(types, "grid2x3")
     end
+    if self.environment:getConfig("media_text_enabled") then
+        table.insert(types, "text")
+    end
     table.insert(types, "mix")
 
     return types
@@ -43,6 +46,7 @@ function M:getScrapeMediaTypes()
     local types = self:getMediaTypes()
 
     table.remove_value(types, "mix")
+    table.remove_value(types, "text")
 
     return types
 end
@@ -53,6 +57,7 @@ function M:getInsetMediaTypes()
     local types = self:getMediaTypes()
 
     table.remove_value(types, "mix")
+    table.remove_value(types, "text")
     --table.remove_value(types, "screenshot")
 
     return types
