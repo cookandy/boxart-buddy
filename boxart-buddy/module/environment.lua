@@ -223,6 +223,8 @@ end
 ---@return string absolute path to the core(info) folder
 function M:muosCoreInfoFolder()
     local coreFolderPaths = {
+        "/opt/muos/share/info/content",
+        "/run/muos/storage/info/content",
         "/opt/muos/share/info/core",
         "/run/muos/storage/info/core",
         path.join({ self.muosPaths.sd2, "MUOS", "info", "core" }),
